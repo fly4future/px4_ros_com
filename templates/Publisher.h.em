@@ -100,7 +100,7 @@ class @(topic)_Publisher
 public:
 	@(topic)_Publisher();
 	virtual ~@(topic)_Publisher();
-	bool init(const std::string &ns, std::string topic_name = "");
+	bool init(const std::string &ns, const std::vector<std::string>& whitelist, std::string topic_name = "");
 	void run();
 	void publish(@(topic)_msg_t *st);
 private:

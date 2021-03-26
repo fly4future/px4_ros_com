@@ -52,7 +52,7 @@ recv_topics = [(alias[idx] if alias[idx] else s.short_name) for idx, s in enumer
 #include "RtpsTopics.h"
 
 bool RtpsTopics::init(std::condition_variable *t_send_queue_cv, std::mutex *t_send_queue_mutex,
-		      std::queue<uint8_t> *t_send_queue, const std::string &ns)
+		      std::queue<uint8_t> *t_send_queue, const std::string &ns, const std::vector<std::string>& whitelist)
 {
 @[if recv_topics]@
 	// Initialise subscribers
@@ -77,17 +77,17 @@ bool RtpsTopics::init(std::condition_variable *t_send_queue_cv, std::mutex *t_se
 @[for topic in send_topics]@
 
 @[    if topic == 'Timesync' or topic == 'timesync']@
-	if (_@(topic)_pub.init(ns)) {
-		if (_@(topic)_fmu_in_pub.init(ns, std::string("fmu/timesync/in"))) {
+	if (_@(topic)_pub.init(ns, whitelist)) {
+		if (_@(topic)_fmu_in_pub.init(ns, whitelist, std::string("fmu/timesync/in"))) {
 			_timesync->start(&_@(topic)_fmu_in_pub);
 			std::cout << "- @(topic) publishers started" << std::endl;
 		}
 @[    elif topic == 'TimesyncStatus' or topic == 'timesync_status']@
-	if (_@(topic)_pub.init(ns, std::string("timesync_status"))) {
+	if (_@(topic)_pub.init(ns, whitelist, std::string("timesync_status"))) {
 		_timesync->init_status_pub(&_@(topic)_pub);
 		std::cout << "- @(topic) publisher started" << std::endl;
 @[    else]@
-	if (_@(topic)_pub.init(ns)) {
+	if (_@(topic)_pub.init(ns, whitelist)) {
 		std::cout << "- @(topic) publisher started" << std::endl;
 @[    end if]@
 

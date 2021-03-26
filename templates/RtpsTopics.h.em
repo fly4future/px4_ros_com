@@ -94,7 +94,7 @@ class RtpsTopics
 {
 public:
 	bool init(std::condition_variable *t_send_queue_cv, std::mutex *t_send_queue_mutex, std::queue<uint8_t> *t_send_queue,
-		  const std::string &ns);
+		  const std::string &ns, const std::vector<std::string>& whitelist);
 	void set_timesync(const std::shared_ptr<TimeSync> &timesync) { _timesync = timesync; };
 @[if send_topics]@
 	template <typename T>

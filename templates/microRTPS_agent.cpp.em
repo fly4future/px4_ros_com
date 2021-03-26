@@ -116,6 +116,7 @@ struct options {
 	bool hw_flow_control = false;
 	bool verbose_debug = false;
 	std::string ns = "";
+	std::string rtps_whitelist_ip = "";
 } _options;
 
 static void usage(const char *name)
@@ -143,6 +144,7 @@ static void usage(const char *name)
 static int parse_options(int argc, char **argv)
 {
 	static const struct option options[] = {
+		{"whitelist", no_argument, NULL, 'a'},
 		{"baudrate", required_argument, NULL, 'b'},
 		{"device", required_argument, NULL, 'd'},
 		{"sw-flow-control", no_argument, NULL, 'f'},
@@ -161,8 +163,9 @@ static int parse_options(int argc, char **argv)
 
 	int ch;
 
-	while ((ch = getopt_long(argc, argv, "t:d:w:b:o:r:s:i:fghvn:", options, nullptr)) >= 0) {
+	while ((ch = getopt_long(argc, argv, "t:d:w:b:o:r:s:i:fghvn:a:", options, nullptr)) >= 0) {
 		switch (ch) {
+		case 'a': if (nullptr != optarg) _options.rtps_whitelist_ip = std::string(optarg); break;
 		case 't': _options.transport      = strcmp(optarg, "UDP") == 0 ?
                                                   options::eTransports::UDP
                                                   : options::eTransports::UART;    break;
@@ -349,8 +352,14 @@ int main(int argc, char **argv)
 	// Init timesync
 	topics->set_timesync(std::make_shared<TimeSync>(_options.verbose_debug));
 
+    std::vector<std::string> whitelist;
+
+    if (_options.rtps_whitelist_ip != "") {
+        whitelist.emplace_back(_options.rtps_whitelist_ip);
+    }
+
 @[if recv_topics]@
-	topics->init(&t_send_queue_cv, &t_send_queue_mutex, &t_send_queue, _options.ns);
+	topics->init(&t_send_queue_cv, &t_send_queue_mutex, &t_send_queue, _options.ns, whitelist);
 @[end if]@
 
 	running = true;

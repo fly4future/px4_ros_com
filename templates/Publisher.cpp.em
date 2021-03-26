@@ -98,7 +98,7 @@ using SharedMemTransportDescriptor = eprosima::fastdds::rtps::SharedMemTransport
 	Domain::removeParticipant(mp_participant);
 }
 
-bool @(topic)_Publisher::init(const std::string &ns, std::string topic_name)
+bool @(topic)_Publisher::init(const std::string &ns, const std::vector<std::string>& whitelist, std::string topic_name)
 {
 	// Create RTPSParticipant
 	ParticipantAttributes PParam;
@@ -120,6 +120,19 @@ bool @(topic)_Publisher::init(const std::string &ns, std::string topic_name)
 	std::string nodeName = ns;
 	nodeName.append("@(topic)_publisher");
 	PParam.rtps.setName(nodeName.c_str());
+
+	if (!whitelist.empty()) {
+		//Create a descriptor for the new transport.
+		auto custom_transport = std::make_shared<UDPv4TransportDescriptor>();
+
+		custom_transport->interfaceWhiteList = whitelist;
+
+		//Disable the built-in Transport Layer.
+		PParam.rtps.useBuiltinTransports = false;
+
+		//Link the Transport Layer to the Participant.
+		PParam.rtps.userTransports.push_back(custom_transport);
+	}
 
 @[if ros2_distro]@
 	// Check if ROS_LOCALHOST_ONLY is set. This means that one wants to use only
@@ -174,7 +187,7 @@ bool @(topic)_Publisher::init(const std::string &ns, std::string topic_name)
 	topicName.append(ns);
 @[    end if]@
 	// ROS2 default publish mode QoS policy
-	Wparam.qos.m_publishMode.kind = ASYNCHRONOUS_PUBLISH_MODE;
+	Wparam.qos.m_publishMode.kind = eprosima::fastdds::dds::ASYNCHRONOUS_PUBLISH_MODE;
 @[else]@
 	std::string topicName = ns;
 @[end if]@
