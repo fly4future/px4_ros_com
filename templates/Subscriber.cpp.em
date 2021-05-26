@@ -99,7 +99,7 @@ using SharedMemTransportDescriptor = eprosima::fastdds::rtps::SharedMemTransport
 
 bool @(topic)_Subscriber::init(uint8_t topic_ID, std::condition_variable *t_send_queue_cv,
 			       std::mutex *t_send_queue_mutex, std::queue<uint8_t> *t_send_queue, const std::string &ns,
-			       std::string topic_name)
+			       const std::vector<std::string>& whitelist, std::string topic_name)
 {
 	m_listener.topic_ID = topic_ID;
 	m_listener.t_send_queue_cv = t_send_queue_cv;
@@ -156,6 +156,18 @@ bool @(topic)_Subscriber::init(uint8_t topic_ID, std::condition_variable *t_send
 @[    end if]@
 	}
 @[end if]@
+	if (!whitelist.empty()) {
+		//Create a descriptor for the new transport.
+		auto custom_transport = std::make_shared<UDPv4TransportDescriptor>();
+
+		custom_transport->interfaceWhiteList = whitelist;
+
+		//Disable the built-in Transport Layer.
+		PParam.rtps.useBuiltinTransports = false;
+
+		//Link the Transport Layer to the Participant.
+		PParam.rtps.userTransports.push_back(custom_transport);
+	}
 
 	mp_participant = Domain::createParticipant(PParam);
 
