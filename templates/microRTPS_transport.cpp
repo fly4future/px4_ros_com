@@ -119,6 +119,12 @@ ssize_t Transport_node::read(uint8_t *topic_id, char out_buffer[], size_t buffer
 		return -1;
 	}
 
+	if (_rx_buff_pos > BUFFER_FLUSH_THRESHOLD)
+	{
+		if (_debug) printf("\033[0;31m[ micrortps_transport ]\tBuffer close to overflow - flushing.. \033[0m\n");
+		_rx_buff_pos = 0;
+	}
+
 	*topic_id = 255;
 
 	ssize_t len = node_read((void *)(_rx_buffer + _rx_buff_pos), sizeof(_rx_buffer) - _rx_buff_pos);
