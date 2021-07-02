@@ -123,7 +123,7 @@ static void usage(const char *name)
 {
 	printf("usage: %s [options]\n\n"
 	       "  -a <whitelist>          List of IP numbers of whitelisted interfaces\n"
-	       "  -b <baudrate>           UART device baudrate. Defaults to 460800\n"
+	       "  -b <baudrate>           UART device baudrate. Defaults to 460800. Used for transmission delay also in UDP case\n"
 	       "  -d <device>             UART device. Defaults to /dev/ttyACM0\n"
 	       "  -f <sw-flow-control>    Activates UART link SW flow control\n"
 	       "  -g <hw-flow-control>    Activates UART link HW flow control\n"
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
     }
 
 @[if recv_topics]@
-	topics->init(&t_send_queue_cv, &t_send_queue_mutex, &t_send_queue, _options.ns, whitelist);
+	topics->init(&t_send_queue_cv, &t_send_queue_mutex, &t_send_queue, _options.ns, whitelist, _options.baudrate);
 @[end if]@
 
 	running = true;

@@ -52,8 +52,10 @@ recv_topics = [(alias[idx] if alias[idx] else s.short_name) for idx, s in enumer
 #include "RtpsTopics.h"
 
 bool RtpsTopics::init(std::condition_variable *t_send_queue_cv, std::mutex *t_send_queue_mutex,
-		      std::queue<uint8_t> *t_send_queue, const std::string &ns, const std::vector<std::string>& whitelist)
+		std::queue<uint8_t> *t_send_queue, const std::string &ns, const std::vector<std::string>& whitelist, const uint32_t transmission_speed_bytes_per_sec)
 {
+	_tr_speed = transmission_speed_bytes_per_sec;
+
 @[if recv_topics]@
 	// Initialise subscribers
 	std::cout << "\033[0;36m---   Subscribers   ---\033[0m" << std::endl;
@@ -104,11 +106,13 @@ bool RtpsTopics::init(std::condition_variable *t_send_queue_cv, std::mutex *t_se
 
 @[if send_topics]@
 template <typename T>
-void RtpsTopics::sync_timestamp_of_incoming_data(T &msg) {
+void RtpsTopics::sync_timestamp_of_incoming_data(T &msg, size_t len) {
+	// Replace timestamp with time delta from original ts to 'now'
+	uint64_t now = _timesync->getROSTimeUSec();
 	uint64_t timestamp = getMsgTimestamp(&msg);
 	uint64_t timestamp_sample = getMsgTimestampSample(&msg);
-	_timesync->subtractOffset(timestamp);
-	setMsgTimestamp(&msg, timestamp);
+	uint64_t ts_delta = now - timestamp + ((uint64_t)len * 1000000 / _tr_speed);
+	setMsgTimestamp(&msg, ts_delta);
 	_timesync->subtractOffset(timestamp_sample);
 	setMsgTimestampSample(&msg, timestamp_sample);
 }
@@ -128,7 +132,7 @@ void RtpsTopics::publish(const uint8_t topic_ID, char data_buffer[], size_t len)
 @[    end if]@
 
 		// apply timestamp offset
-		sync_timestamp_of_incoming_data(st);
+		sync_timestamp_of_incoming_data(st, len);
 
 		_@(topic)_pub.publish(&st);
 	}
@@ -144,10 +148,13 @@ void RtpsTopics::publish(const uint8_t topic_ID, char data_buffer[], size_t len)
 @[end if]@
 @[if recv_topics]@
 template <typename T>
-void RtpsTopics::sync_timestamp_of_outgoing_data(T &msg) {
-	uint64_t timestamp = getMsgTimestamp(&msg);
+void RtpsTopics::sync_timestamp_of_outgoing_data(T &msg, size_t len) {
 	uint64_t timestamp_sample = getMsgTimestampSample(&msg);
-	_timesync->addOffset(timestamp);
+
+	// Substract time_delta and transmission delay from current time and set new timestamp
+	uint64_t now = _timesync->getROSTimeUSec();
+	uint64_t ts_delta = getMsgTimestamp(&msg);
+	uint64_t timestamp = now - ts_delta - ((uint64_t)len * 1000000 / _tr_speed);
 	setMsgTimestamp(&msg, timestamp);
 	_timesync->addOffset(timestamp_sample);
 	setMsgTimestampSample(&msg, timestamp_sample);
@@ -165,7 +172,8 @@ bool RtpsTopics::getMsg(const uint8_t topic_ID, eprosima::fastcdr::Cdr &scdr)
 			@(topic)_msg_t msg = _@(topic)_sub.getMsg();
 
 			// apply timestamp offset
-			sync_timestamp_of_outgoing_data(msg);
+			size_t len = scdr.getSerializedDataLength();
+			sync_timestamp_of_outgoing_data(msg, len);
 
 			msg.serialize(scdr);
 			ret = true;
