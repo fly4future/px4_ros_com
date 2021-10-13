@@ -61,3 +61,23 @@ rtps:
     send: true
   - msg: SensorCombined
     send: true
+  - msg: BatteryStatus
+    send: true
+  - msg: DistanceSensor
+    send: true
+  - msg: SensorGps
+    receive: true
+  - msg: MissionResult
+    send: true
+  - msg: SensorBaro
+    send: true
+  - msg: SensorMag
+    send: true
+  - msg: VehicleGlobalPosition
+    send: true
+  - msg: VehicleGpsPosition
+    send: true
+  - msg: VehicleLandDetected
+    send: true
+  - msg: VehicleLocalPosition
+    send: true
